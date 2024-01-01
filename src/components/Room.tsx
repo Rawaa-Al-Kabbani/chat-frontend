@@ -1,5 +1,6 @@
 import { FunctionComponent, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { styled } from "styled-components";
 
 
 const Room: FunctionComponent = () => {
@@ -34,19 +35,75 @@ const Room: FunctionComponent = () => {
         try {
             const response = await fetch(endpoint, requestOptions);
             const json = await response.json();
-            console.log('room', json.data.room);
             setRoom(json.data.room);
         } catch (error) {
             console.error('Error fetching room:', error);
         }
     }
     useEffect(() => {
-        console.log('room id', id);
         fetchRoom(Number(id));
     }, [id])
-    
+
+    if (!room) {
+        return null;
+    }
+
     return (
-        <div>Room</div>
+        <Container>
+            <SubContainer>
+                <div style={{ margin: "50px" }}>
+                    <span>{room.name} </span>
+                    <span>Room</span>
+                </div>
+                {room.messages.length > 0 && (
+                    <Messages>
+                        {room.messages.map((message: any) => (
+                            <MessageBlock key={message.id}>
+                                <div>{message.user_name}</div>
+                                <Message>{message.text}</Message>
+                            </MessageBlock>
+                        ))}
+                    </Messages>
+                )}
+            </SubContainer>
+        </Container>
     )
 }
 export default Room;
+
+const Container = styled.div`
+  text-align: center;
+  width: 500px;
+  margin: auto;
+`;
+
+const SubContainer = styled.div`
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+`;
+
+const Messages = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+`;
+
+const MessageBlock = styled.div`
+  height: auto;
+  margin-bottom: 50px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+`;
+
+const Message = styled.div`
+  background-color: #1e2945;
+  color: white;
+  padding: 10px;
+  border-radius: 5px;
+`;

@@ -48,7 +48,7 @@ const HomePage = () => {
     }
 
     return (
-        <Rooms rooms={rooms as any[]} />
+        <Rooms rooms={rooms as any[]} fetchRooms={fetchRooms}/>
     );
 }
 
