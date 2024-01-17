@@ -32,7 +32,6 @@ const HomePage = () => {
         try {
             const response = await fetch(endpoint, requestOptions);
             const json = await response.json();
-            console.log('rooms', json.data.rooms);
             setRooms(json.data.rooms);
         } catch (error) {
             console.error('Error fetching rooms:', error);

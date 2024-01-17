@@ -1,6 +1,7 @@
 import { FunctionComponent, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { styled } from "styled-components";
+import { X } from "react-feather";
 
 
 const Rooms: FunctionComponent<{ rooms: any[]; fetchRooms: () => void }> = ({ rooms, fetchRooms }) => {
@@ -29,13 +30,11 @@ const Rooms: FunctionComponent<{ rooms: any[]; fetchRooms: () => void }> = ({ ro
         }
       }
     `;
-  
     const variables = {
       createRoomInput: {
         name: roomName,
       },
     };
-  
     const requestOptions = {
       method: "POST",
       headers: {
@@ -51,8 +50,8 @@ const Rooms: FunctionComponent<{ rooms: any[]; fetchRooms: () => void }> = ({ ro
       if (result.errors) {
         console.error('GraphQL errors:', result.errors.map((error: any) => error.message));
       } else if (result.data && result.data.createRoom) {
-        setIsOpen(false);
         fetchRooms();
+        setIsOpen(false);
       } else {
         console.error('Unexpected response:', result);
       }
@@ -60,6 +59,40 @@ const Rooms: FunctionComponent<{ rooms: any[]; fetchRooms: () => void }> = ({ ro
       console.error('Error adding room:', error);
     }
   };
+
+  const handleOnRemoveRoom = async(roomId: number) => {
+    const mutation = `
+        mutation removeRoom($id: Int!) {
+          removeRoom(id: $id) {
+              id
+            }
+        }
+    `;
+    const variables = {
+        id: roomId,
+      };
+    const requestOptions = {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ query: mutation, variables }),
+    };
+    try {
+        const response = await fetch(endpoint, requestOptions);
+        const result = await response.json();
+        if (result.errors) {
+            console.error('GraphQL errors:', result.errors.map((error: any) => error.message));
+          } else if (result.data && result.data.removeMessage) {
+            fetchRooms();
+            console.log('data', result.data.removeMessage);
+      } else {
+            console.error('Unexpected response:', result);
+          }
+    } catch (error) {
+        console.error('Error fetching room:', error);
+    }
+  }
   
 
 
@@ -70,7 +103,16 @@ const Rooms: FunctionComponent<{ rooms: any[]; fetchRooms: () => void }> = ({ ro
         <RoomList>
           {rooms.length > 0 && rooms.map((room: any) => {
             return (
-              <RoomItem key={room.id} onClick={() => handleOnClickRoom(room.id)}>{room.name}</RoomItem>
+              <RoomContainer key={rooms.map((room) => room.id).join(',')}>
+                <RoomItem  onClick={() => handleOnClickRoom(room.id)}>{room.name}</RoomItem>
+                <RemoveContainer onClick={() => handleOnRemoveRoom(room.id)}>
+                  <X
+                    color={"white"}
+                    width={"30px"}
+                    height={"30px"}
+                  />
+                </RemoveContainer>
+              </RoomContainer>
             )
           })}
           {isOpen ? (
@@ -129,4 +171,15 @@ const RoomItem = styled.div`
 `;
 
 const Input = styled.input`
+`;
+
+const RoomContainer = styled.div`
+  position: relative;
+`;
+
+const RemoveContainer = styled.div`
+  cursor: pointer;
+  position: absolute;
+  top: 15px;
+  right: 15px;
 `;
