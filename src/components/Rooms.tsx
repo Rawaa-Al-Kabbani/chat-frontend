@@ -1,11 +1,14 @@
-import { FunctionComponent, useState } from 'react'
+import { FunctionComponent, useEffect, useState } from 'react'
+import { X } from 'react-feather'
 import { useNavigate } from 'react-router-dom'
 import { styled } from 'styled-components'
-import { X } from 'react-feather'
+import { fetchRooms, onCreateRoom, onRemoveRoom } from '../api/room'
+import { RoomModel } from '../types'
 
-const Rooms: FunctionComponent<{ rooms: any[]; fetchRooms: () => void }> = ({ rooms, fetchRooms }) => {
+const Rooms: FunctionComponent = () => {
   const navigate = useNavigate()
-  const [isOpen, setIsOpen] = useState<boolean>(false)
+  const [rooms, setRooms] = useState<RoomModel[]>([])
+  const [isCreatingRoom, setIsCreatingRoom] = useState<boolean>(false)
   const [roomName, setRoomName] = useState<string | undefined>(undefined)
 
   const handleOnClickRoom = (roomId: string) => {
@@ -17,85 +20,40 @@ const Rooms: FunctionComponent<{ rooms: any[]; fetchRooms: () => void }> = ({ ro
     setRoomName(value)
   }
 
-  const endpoint = 'http://localhost:3001/graphql'
-
-  const handleOnSaveName = async () => {
-    const mutation = `
-      mutation createRoom($createRoomInput: CreateRoomInput!) {
-        createRoom(createRoomInput: $createRoomInput) {
-          id
-          name
-        }
-      }
-    `
-    const variables = {
-      createRoomInput: {
-        name: roomName
-      }
-    }
-    const requestOptions = {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ query: mutation, variables })
-    }
-
-    try {
-      const response = await fetch(endpoint, requestOptions)
-      const result = await response.json()
-
-      if (result.errors) {
-        console.error(
-          'GraphQL errors:',
-          result.errors.map((error: any) => error.message)
-        )
-      } else if (result.data && result.data.createRoom) {
+  const handleOnCreateRoom = () => {
+    const createRoom = async () => {
+      const newRoom = await onCreateRoom(roomName || '')
+      if (newRoom) {
         fetchRooms()
-        setIsOpen(false)
-      } else {
-        console.error('Unexpected response:', result)
+        setIsCreatingRoom(false)
       }
-    } catch (error) {
-      console.error('Error adding room:', error)
     }
+    createRoom()
   }
 
   const handleOnRemoveRoom = async (roomId: number) => {
-    const mutation = `
-        mutation removeRoom($id: Int!) {
-          removeRoom(id: $id) {
-              id
-            }
-        }
-    `
-    const variables = {
-      id: roomId
-    }
-    const requestOptions = {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ query: mutation, variables })
-    }
-    try {
-      const response = await fetch(endpoint, requestOptions)
-      const result = await response.json()
-      if (result.errors) {
-        console.error(
-          'GraphQL errors:',
-          result.errors.map((error: any) => error.message)
-        )
-      } else if (result.data && result.data.removeMessage) {
+    const createRoom = async () => {
+      const deletedRoom = await onRemoveRoom(roomId)
+      if (deletedRoom) {
         fetchRooms()
-        console.log('data', result.data.removeMessage)
-      } else {
-        console.error('Unexpected response:', result)
       }
-    } catch (error) {
-      console.error('Error fetching room:', error)
     }
+    createRoom()
+  }
+
+  const getRooms = async () => {
+    const allRooms = await fetchRooms()
+    if (allRooms) {
+      setRooms(allRooms)
+    }
+  }
+
+  useEffect(() => {
+    getRooms()
+  }, [])
+
+  if (rooms.length === 0) {
+    return <div>No items</div>
   }
 
   return (
@@ -114,18 +72,18 @@ const Rooms: FunctionComponent<{ rooms: any[]; fetchRooms: () => void }> = ({ ro
                 </RoomContainer>
               )
             })}
-          {isOpen ? (
+          {isCreatingRoom ? (
             <RoomItem>
               <Input
                 type='text'
                 placeholder='Enter room name'
                 value={roomName}
                 onChange={(e) => handleOnChangeName(e)}
-                onBlur={() => handleOnSaveName()}
+                onBlur={() => handleOnCreateRoom()}
               />
             </RoomItem>
           ) : (
-            <RoomItem onClick={() => setIsOpen(true)}>Create new room</RoomItem>
+            <RoomItem onClick={() => setIsCreatingRoom(true)}>Create new room</RoomItem>
           )}
         </RoomList>
       </SubContainer>

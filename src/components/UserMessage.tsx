@@ -1,104 +1,45 @@
-import { FunctionComponent, useState } from 'react'
+import { FunctionComponent, useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { styled } from 'styled-components'
+import { fetchRoom, onDeleteMessage, onEditMessage } from '../api/room'
+import { MessageModel } from '../types'
 
 const UserMessage: FunctionComponent<{
   message: any
-  handleOnChangeMessage: (value: string) => void
-  fetchRoom: (id: number) => void
-}> = ({ message, handleOnChangeMessage, fetchRoom }) => {
-  const endpoint = 'http://localhost:3001/graphql'
+  getRoom: (id: number) => void
+}> = ({ message, getRoom }) => {
   const { id } = useParams()
   const [isOpen, setIsOpen] = useState<boolean>(false)
-  const [editedMessage, setEditedMessage] = useState<string>(message.text || '')
-
-  console.log('messssssssage', message)
-
-  const onMessage = (value: string) => {
-    handleOnEditMessage(value)
-  }
+  const [editedMessage, setEditedMessage] = useState<string>('')
 
   const handleOnEditMessage = async (text: string) => {
-    const mutation = `
-            mutation editMessage($id: Int!, $input: CreateMessageInput!) {
-                editMessage(id: $id, input: $input) {
-                    id
-                    user_name
-                    text
-                    room_id
-                    created_at
-                    updated_at
-                }
-            }
-        `
-    const variables = {
-      id: message.id,
-      input: {
-        room_id: Number(id),
-        text: text,
-        user_name: message.user_name
-      }
+    const input = {
+      room_id: Number(id),
+      text: text,
+      user_name: message.user_name
     }
-    const requestOptions = {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ query: mutation, variables })
-    }
-    try {
-      const response = await fetch(endpoint, requestOptions)
-      const result = await response.json()
-      if (result.errors) {
-        console.error(
-          'GraphQL errors:',
-          result.errors.map((error: any) => error.message)
-        )
-      } else if (result.data && result.data.editMessage) {
-        fetchRoom(Number(id))
-        console.log('data', result.data.editMessage)
-      } else {
-        console.error('Unexpected response:', result)
+    const result = await onEditMessage(message.id, input)
+    if (result) {
+      const newRoom = await fetchRoom(Number(id))
+      if (newRoom) {
+        const newMessage = newRoom.messages.find((item: MessageModel) => message.id === item.id)?.text
+        if (newMessage) {
+          setEditedMessage(newMessage)
+        }
       }
-    } catch (error) {
-      console.error('Error fetching room:', error)
     }
   }
 
+  useEffect(() => {
+    if (message.text !== editedMessage) {
+      setEditedMessage(message.text)
+    }
+  }, [message])
+
   const handleOnDeleteMessage = async (messageId: number) => {
-    const mutation = `
-            mutation deleteMessage($id: Int!) {
-                deleteMessage(id: $id) {
-                    id
-                }
-            }
-        `
-    const variables = {
-      id: messageId
-    }
-    const requestOptions = {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ query: mutation, variables })
-    }
-    try {
-      const response = await fetch(endpoint, requestOptions)
-      const result = await response.json()
-      if (result.errors) {
-        console.error(
-          'GraphQL errors:',
-          result.errors.map((error: any) => error.message)
-        )
-      } else if (result.data && result.data.deleteMessage) {
-        console.log('data', result.data.deleteMessage)
-        fetchRoom(Number(id))
-      } else {
-        console.error('Unexpected response:', result)
-      }
-    } catch (error) {
-      console.error('Error fetching room:', error)
+    const deletedMessage = await onDeleteMessage(messageId)
+    if (deletedMessage) {
+      getRoom(Number(id))
     }
   }
 
@@ -115,7 +56,7 @@ const UserMessage: FunctionComponent<{
                     type='text'
                     placeholder='Write a messsage'
                     defaultValue={editedMessage}
-                    onChange={(e) => onMessage(e.target.value)}
+                    onChange={(e) => handleOnEditMessage(e.target.value)}
                   />
                 </div>
               ) : (

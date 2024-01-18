@@ -1,10 +1,10 @@
 import { FunctionComponent, useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { styled } from 'styled-components'
+import { fetchRoom, onCreateMessage } from '../api/room'
 import UserMessage from './UserMessage'
 
 const Room: FunctionComponent = () => {
-  const endpoint = 'http://localhost:3001/graphql'
   const { id } = useParams()
   const [room, setRoom] = useState<any>(undefined)
   const [userName, setUserName] = useState<string>('')
@@ -22,87 +22,27 @@ const Room: FunctionComponent = () => {
     setMessage(value)
   }
 
-  const fetchRoom = async (roomId: number) => {
-    const mutation = `
-            mutation findRoom($roomId: Int!) {
-                room(id: $roomId) {
-                    id
-                    name
-                    messages {
-                    id
-                    user_name
-                    text
-                    room_id
-                    created_at
-                    updated_at
-                    }
-                }
-            }
-        `
-    const requestOptions = {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ query: mutation, variables: { roomId } })
+  const handleOnCreateMessage = async () => {
+    const input = {
+      user_name: userName,
+      text: message,
+      room_id: Number(id)
     }
-    try {
-      const response = await fetch(endpoint, requestOptions)
-      const json = await response.json()
-      setRoom(json.data.room)
-    } catch (error) {
-      console.error('Error fetching room:', error)
+    const createdMessage = await onCreateMessage(input)
+    if (createdMessage) {
+      getRoom(Number(id))
     }
   }
 
-  const handleOnCreateMessage = async () => {
-    const mutation = `
-            mutation createMessage($input: CreateMessageInput!) {
-                createMessage(input: $input) {
-                    id
-                    user_name
-                    text
-                    room_id
-                    created_at
-                    updated_at
-                }
-            }
-        `
-    const variables = {
-      input: {
-        user_name: userName,
-        text: message,
-        room_id: Number(id)
-      }
-    }
-    const requestOptions = {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ query: mutation, variables })
-    }
-    try {
-      const response = await fetch(endpoint, requestOptions)
-      const result = await response.json()
-      if (result.errors) {
-        console.error(
-          'GraphQL errors:',
-          result.errors.map((error: any) => error.message)
-        )
-      } else if (result.data && result.data.createMessage) {
-        console.log('data', result.data.createMessage)
-        fetchRoom(Number(id))
-      } else {
-        console.error('Unexpected response:', result)
-      }
-    } catch (error) {
-      console.error('Error fetching room:', error)
+  const getRoom = async (id: number) => {
+    const oneRoom = await fetchRoom(id)
+    if (oneRoom) {
+      setRoom(oneRoom)
     }
   }
 
   useEffect(() => {
-    fetchRoom(Number(id))
+    getRoom(Number(id))
   }, [id])
 
   if (!room) {
@@ -116,10 +56,7 @@ const Room: FunctionComponent = () => {
           <span>{room.name} </span>
           <span>Room</span>
         </div>
-        {room.messages.length > 0 &&
-          room.messages.map((message: any) => (
-            <UserMessage message={message} handleOnChangeMessage={handleOnChangeMessage} fetchRoom={fetchRoom} />
-          ))}
+        {room.messages.length > 0 && room.messages.map((message: any) => <UserMessage message={message} getRoom={getRoom} />)}
 
         <Columns>
           <Rows style={{ flex: 1, justifyContent: 'flex-end' }}>
@@ -174,13 +111,6 @@ const Rows = styled.div`
 const Columns = styled.div`
   display: flex;
   margin-bottom: 50px;
-`
-
-const Message = styled.div`
-  background-color: #128c7e;
-  color: white;
-  padding: 10px;
-  border-radius: 5px;
 `
 
 const Input = styled.input`
