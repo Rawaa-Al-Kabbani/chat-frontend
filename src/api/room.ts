@@ -185,9 +185,9 @@ export const onCreateMessage = async (input: any) => {
   }
 }
 
-export const onDeleteMessage = async (messageId: number) => {
+export const onDeleteMessage = async (messageId: string) => {
   const mutation = `
-            mutation deleteMessage($id: Int!) {
+            mutation deleteMessage($id: String!) {
                 deleteMessage(id: $id) {
                     id
                 }
@@ -223,7 +223,7 @@ export const onDeleteMessage = async (messageId: number) => {
 
 export const onEditMessage = async (messageId: string, input: any) => {
   const mutation = `
-            mutation editMessage($id: Int!, $input: CreateMessageInput!) {
+            mutation editMessage($id: String!, $input: CreateMessageInput!) {
                 editMessage(id: $id, input: $input) {
                     id
                     user_name

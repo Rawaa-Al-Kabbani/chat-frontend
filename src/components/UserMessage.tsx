@@ -24,7 +24,7 @@ const UserMessage: FunctionComponent<{
     }
   }
 
-  const handleOnDeleteMessage = async (messageId: number) => {
+  const handleOnDeleteMessage = async (messageId: string) => {
     await onDeleteMessage(messageId)
   }
 
@@ -72,7 +72,7 @@ const UserMessage: FunctionComponent<{
           </Rows>
           <Buttons>
             <Button onClick={() => setIsOpen(true)}>Edit</Button>
-            <Button onClick={() => handleOnDeleteMessage(Number(message.id))} style={{ marginLeft: '6px' }}>
+            <Button onClick={() => handleOnDeleteMessage(message.id)} style={{ marginLeft: '6px' }}>
               Delete
             </Button>
           </Buttons>

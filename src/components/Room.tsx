@@ -30,7 +30,7 @@ const Room: FunctionComponent = () => {
       text: message,
       room_id: id
     }
-    await onCreateMessage(input);
+    await onCreateMessage(input)
     setUserName('')
     setMessage('')
   }
@@ -45,7 +45,7 @@ const Room: FunctionComponent = () => {
   useEffect(() => {
     socket.on('connect', () => {
       console.log('Connected')
-    });
+    })
     socket.on(id as string, (data: any) => {
       if (data.content) {
         console.log('OnMessage data is recieved')
@@ -83,7 +83,7 @@ const Room: FunctionComponent = () => {
         {room.messages.length > 0 &&
           room.messages.map((message: any) => <UserMessage key={message.id} message={message} getRoom={getRoom} />)}
 
-        <Columns key={room.messages.map((item: any) => item.id).join(",")}>
+        <Columns key={room.messages.map((item: any) => item.id).join(',')}>
           <Rows style={{ flex: 1, justifyContent: 'flex-end' }}>
             <div style={{ width: '100%', marginBottom: '15px' }}>
               <Input

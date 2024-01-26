@@ -1,11 +1,11 @@
 export type RoomModel = {
-  id: number
+  id: string
   name: string
   messages: MessageModel[]
 }
 
 export type MessageModel = {
-  id: number
+  id: string
   user_name: string
   text: string
   room_id: number
