@@ -1,7 +1,8 @@
-import { FunctionComponent, useEffect, useState } from 'react'
+import { FunctionComponent, useContext, useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { styled } from 'styled-components'
 import { fetchRoom, onCreateMessage } from '../api/room'
+import { WebsocketContext } from '../contexts/WebsocketContext'
 import UserMessage from './UserMessage'
 
 const Room: FunctionComponent = () => {
@@ -9,6 +10,7 @@ const Room: FunctionComponent = () => {
   const [room, setRoom] = useState<any>(undefined)
   const [userName, setUserName] = useState<string>('')
   const [message, setMessage] = useState<string>('')
+  const socket = useContext(WebsocketContext)
 
   const handleOnChangeUserName = (value: string) => {
     setUserName(value)
@@ -28,10 +30,8 @@ const Room: FunctionComponent = () => {
       text: message,
       room_id: Number(id)
     }
-    const createdMessage = await onCreateMessage(input)
-    if (createdMessage) {
-      getRoom(Number(id))
-    }
+    await onCreateMessage(input);
+    socket.emit("newM");
   }
 
   const getRoom = async (id: number) => {
@@ -40,6 +40,26 @@ const Room: FunctionComponent = () => {
       setRoom(oneRoom)
     }
   }
+
+  useEffect(() => {
+    socket.on('connect', () => {
+      console.log('Connected')
+    });
+    socket.on(id as string, (data: any) => {
+      console.log("MEssage");
+      if (data.content) {
+        console.log('OnMessage data is recieved')
+        console.log('data', data)
+        getRoom(Number(id))
+      }
+    })
+
+    return () => {
+      console.log('Unregistering events....')
+      socket.off('connect')
+      socket.off('onMessage')
+    }
+  }, [])
 
   useEffect(() => {
     getRoom(Number(id))
@@ -56,7 +76,8 @@ const Room: FunctionComponent = () => {
           <span>{room.name} </span>
           <span>Room</span>
         </div>
-        {room.messages.length > 0 && room.messages.map((message: any) => <UserMessage message={message} getRoom={getRoom} />)}
+        {room.messages.length > 0 &&
+          room.messages.map((message: any) => <UserMessage key={message.id} message={message} getRoom={getRoom} />)}
 
         <Columns>
           <Rows style={{ flex: 1, justifyContent: 'flex-end' }}>

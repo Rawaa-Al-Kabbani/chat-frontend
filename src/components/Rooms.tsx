@@ -24,21 +24,22 @@ const Rooms: FunctionComponent = () => {
     const createRoom = async () => {
       const newRoom = await onCreateRoom(roomName || '')
       if (newRoom) {
-        fetchRooms()
+        getRooms()
         setIsCreatingRoom(false)
+        setRoomName('')
       }
     }
     createRoom()
   }
 
-  const handleOnRemoveRoom = async (roomId: number) => {
-    const createRoom = async () => {
+  const handleOnRemoveRoom = (roomId: number) => {
+    const removeRoom = async () => {
       const deletedRoom = await onRemoveRoom(roomId)
       if (deletedRoom) {
-        fetchRooms()
+        getRooms()
       }
     }
-    createRoom()
+    removeRoom()
   }
 
   const getRooms = async () => {
@@ -60,11 +61,11 @@ const Rooms: FunctionComponent = () => {
     <Container>
       <SubContainer>
         <div style={{ margin: '50px' }}>Chat rooms</div>
-        <RoomList>
+        <RoomList key={rooms.map((room) => room.id).join(',')}>
           {rooms.length > 0 &&
             rooms.map((room: any) => {
               return (
-                <RoomContainer key={rooms.map((room) => room.id).join(',')}>
+                <RoomContainer key={room.id}>
                   <RoomItem onClick={() => handleOnClickRoom(room.id)}>{room.name}</RoomItem>
                   <RemoveContainer onClick={() => handleOnRemoveRoom(room.id)}>
                     <X color={'white'} width={'30px'} height={'30px'} />

@@ -1,8 +1,8 @@
-import { FunctionComponent, useEffect, useState } from 'react'
+import { FunctionComponent, useContext, useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { styled } from 'styled-components'
-import { fetchRoom, onDeleteMessage, onEditMessage } from '../api/room'
-import { MessageModel } from '../types'
+import { onDeleteMessage, onEditMessage } from '../api/room'
+import { WebsocketContext } from '../contexts/WebsocketContext'
 
 const UserMessage: FunctionComponent<{
   message: any
@@ -10,7 +10,7 @@ const UserMessage: FunctionComponent<{
 }> = ({ message, getRoom }) => {
   const { id } = useParams()
   const [isOpen, setIsOpen] = useState<boolean>(false)
-  const [editedMessage, setEditedMessage] = useState<string>('')
+  const socket = useContext(WebsocketContext)
 
   const handleOnEditMessage = async (text: string) => {
     const input = {
@@ -20,28 +20,32 @@ const UserMessage: FunctionComponent<{
     }
     const result = await onEditMessage(message.id, input)
     if (result) {
-      const newRoom = await fetchRoom(Number(id))
-      if (newRoom) {
-        const newMessage = newRoom.messages.find((item: MessageModel) => message.id === item.id)?.text
-        if (newMessage) {
-          setEditedMessage(newMessage)
-        }
-      }
+      setIsOpen(false)
     }
+  }
+
+  const handleOnDeleteMessage = async (messageId: number) => {
+    await onDeleteMessage(messageId)
   }
 
   useEffect(() => {
-    if (message.text !== editedMessage) {
-      setEditedMessage(message.text)
-    }
-  }, [message])
+    socket.on('connect', () => {
+      console.log('Connected')
+    })
+    socket.on('onMessage', (data: any) => {
+      if (data.content) {
+        console.log('OnMessage data is recieved')
+        console.log('data', data)
+        getRoom(Number(id))
+      }
+    })
 
-  const handleOnDeleteMessage = async (messageId: number) => {
-    const deletedMessage = await onDeleteMessage(messageId)
-    if (deletedMessage) {
-      getRoom(Number(id))
+    return () => {
+      console.log('Unregistering events....')
+      socket.off('connect')
+      socket.off('onMessage')
     }
-  }
+  }, [])
 
   return (
     <>
@@ -55,8 +59,8 @@ const UserMessage: FunctionComponent<{
                   <Input
                     type='text'
                     placeholder='Write a messsage'
-                    defaultValue={editedMessage}
-                    onChange={(e) => handleOnEditMessage(e.target.value)}
+                    defaultValue={message.text}
+                    onBlur={(e) => handleOnEditMessage(e.target.value)}
                   />
                 </div>
               ) : (
