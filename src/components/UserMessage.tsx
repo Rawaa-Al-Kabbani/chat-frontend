@@ -6,7 +6,7 @@ import { WebsocketContext } from '../contexts/WebsocketContext'
 
 const UserMessage: FunctionComponent<{
   message: any
-  getRoom: (id: number) => void
+  getRoom: (id: string) => void
 }> = ({ message, getRoom }) => {
   const { id } = useParams()
   const [isOpen, setIsOpen] = useState<boolean>(false)
@@ -14,7 +14,7 @@ const UserMessage: FunctionComponent<{
 
   const handleOnEditMessage = async (text: string) => {
     const input = {
-      room_id: Number(id),
+      room_id: id,
       text: text,
       user_name: message.user_name
     }
@@ -36,7 +36,9 @@ const UserMessage: FunctionComponent<{
       if (data.content) {
         console.log('OnMessage data is recieved')
         console.log('data', data)
-        getRoom(Number(id))
+        if (id) {
+          getRoom(id)
+        }
       }
     })
 

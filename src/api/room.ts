@@ -34,9 +34,9 @@ export const fetchRooms: () => Promise<RoomModel[]> = async () => {
   }
 }
 
-export const fetchRoom = async (roomId: number) => {
+export const fetchRoom = async (roomId: string) => {
   const mutation = `
-            mutation findRoom($roomId: Int!) {
+            mutation findRoom($roomId: String!) {
                 room(id: $roomId) {
                     id
                     name
@@ -108,9 +108,9 @@ export const onCreateRoom: (roomName: string) => Promise<RoomModel> = async (roo
   }
 }
 
-export const onRemoveRoom: (roomId: number) => Promise<RoomModel> = async (roomId: number) => {
+export const onRemoveRoom: (roomId: string) => Promise<RoomModel> = async (roomId: string) => {
   const mutation = `
-        mutation removeRoom($id: Int!) {
+        mutation removeRoom($id: String!) {
           removeRoom(id: $id) {
               id
             }

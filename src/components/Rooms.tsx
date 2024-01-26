@@ -9,7 +9,7 @@ const Rooms: FunctionComponent = () => {
   const navigate = useNavigate()
   const [rooms, setRooms] = useState<RoomModel[]>([])
   const [isCreatingRoom, setIsCreatingRoom] = useState<boolean>(false)
-  const [roomName, setRoomName] = useState<string | undefined>(undefined)
+  const [roomName, setRoomName] = useState<string>('')
 
   const handleOnClickRoom = (roomId: string) => {
     navigate(`/room/${roomId}`)
@@ -22,7 +22,7 @@ const Rooms: FunctionComponent = () => {
 
   const handleOnCreateRoom = () => {
     const createRoom = async () => {
-      const newRoom = await onCreateRoom(roomName || '')
+      const newRoom = await onCreateRoom(roomName)
       if (newRoom) {
         getRooms()
         setIsCreatingRoom(false)
@@ -32,7 +32,7 @@ const Rooms: FunctionComponent = () => {
     createRoom()
   }
 
-  const handleOnRemoveRoom = (roomId: number) => {
+  const handleOnRemoveRoom = (roomId: string) => {
     const removeRoom = async () => {
       const deletedRoom = await onRemoveRoom(roomId)
       if (deletedRoom) {

@@ -7,7 +7,7 @@ import UserMessage from './UserMessage'
 
 const Room: FunctionComponent = () => {
   const { id } = useParams()
-  const [room, setRoom] = useState<any>(undefined)
+  const [room, setRoom] = useState<any>('')
   const [userName, setUserName] = useState<string>('')
   const [message, setMessage] = useState<string>('')
   const socket = useContext(WebsocketContext)
@@ -28,13 +28,14 @@ const Room: FunctionComponent = () => {
     const input = {
       user_name: userName,
       text: message,
-      room_id: Number(id)
+      room_id: id
     }
     await onCreateMessage(input);
-    socket.emit("newM");
+    setUserName('')
+    setMessage('')
   }
 
-  const getRoom = async (id: number) => {
+  const getRoom = async (id: string) => {
     const oneRoom = await fetchRoom(id)
     if (oneRoom) {
       setRoom(oneRoom)
@@ -46,11 +47,12 @@ const Room: FunctionComponent = () => {
       console.log('Connected')
     });
     socket.on(id as string, (data: any) => {
-      console.log("MEssage");
       if (data.content) {
         console.log('OnMessage data is recieved')
         console.log('data', data)
-        getRoom(Number(id))
+        if (id) {
+          getRoom(id)
+        }
       }
     })
 
@@ -62,7 +64,9 @@ const Room: FunctionComponent = () => {
   }, [])
 
   useEffect(() => {
-    getRoom(Number(id))
+    if (id) {
+      getRoom(id)
+    }
   }, [id])
 
   if (!room) {
@@ -79,7 +83,7 @@ const Room: FunctionComponent = () => {
         {room.messages.length > 0 &&
           room.messages.map((message: any) => <UserMessage key={message.id} message={message} getRoom={getRoom} />)}
 
-        <Columns>
+        <Columns key={room.messages.map((item: any) => item.id).join(",")}>
           <Rows style={{ flex: 1, justifyContent: 'flex-end' }}>
             <div style={{ width: '100%', marginBottom: '15px' }}>
               <Input
