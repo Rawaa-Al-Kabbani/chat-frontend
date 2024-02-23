@@ -23,7 +23,9 @@ const Rooms: FunctionComponent = () => {
   const handleOnCreateRoom = () => {
     const createRoom = async () => {
       const newRoom = await onCreateRoom(roomName)
-      if (newRoom) {
+      if (newRoom && newRoom === 401) {
+        navigate('sign_in')
+      } else {
         getRooms()
         setIsCreatingRoom(false)
         setRoomName('')
@@ -35,7 +37,9 @@ const Rooms: FunctionComponent = () => {
   const handleOnRemoveRoom = (roomId: string) => {
     const removeRoom = async () => {
       const deletedRoom = await onRemoveRoom(roomId)
-      if (deletedRoom) {
+      if (deletedRoom && deletedRoom === 401) {
+        navigate('sign_in')
+      } else {
         getRooms()
       }
     }
@@ -52,11 +56,11 @@ const Rooms: FunctionComponent = () => {
   useEffect(() => {
     getRooms()
   }, [])
-
+  /*
   if (rooms.length === 0) {
     return <div>No items</div>
   }
-
+*/
   return (
     <Container>
       <SubContainer>

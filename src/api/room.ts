@@ -1,6 +1,13 @@
 import { endpoint } from '../constants'
-import { RoomModel } from '../types'
+import { RoomModel, UserModel } from '../types'
 
+const redirectWhenUnauthorizedUser = (errors: any) => {
+  const status = errors[0].extensions.originalError.statusCode
+  if (status === 401) {
+    window.localStorage.removeItem('token')
+    return status
+  }
+}
 export const fetchRooms: () => Promise<RoomModel[]> = async () => {
   const query = `
             query {
@@ -9,7 +16,7 @@ export const fetchRooms: () => Promise<RoomModel[]> = async () => {
                     name
                     messages {
                         id
-                        user_name
+                        user_id
                         text
                         room_id
                         created_at
@@ -21,7 +28,8 @@ export const fetchRooms: () => Promise<RoomModel[]> = async () => {
   const requestOptions = {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer ' + localStorage.getItem('token')
     },
     body: JSON.stringify({ query })
   }
@@ -34,27 +42,57 @@ export const fetchRooms: () => Promise<RoomModel[]> = async () => {
   }
 }
 
-export const fetchRoom = async (roomId: string) => {
-  const mutation = `
-            mutation findRoom($roomId: String!) {
-                room(id: $roomId) {
-                    id
-                    name
-                    messages {
+export const fetchUsers: () => Promise<UserModel[]> = async () => {
+  const query = `
+            query {
+                users {
                     id
                     user_name
-                    text
-                    room_id
-                    created_at
-                    updated_at
-                    }
                 }
             }
-        `
+            `
   const requestOptions = {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer ' + localStorage.getItem('token')
+    },
+    body: JSON.stringify({ query })
+  }
+  try {
+    const response = await fetch(endpoint, requestOptions)
+    const json = await response.json()
+    return json.data.users
+  } catch (error) {
+    console.error('Error fetching users:', error)
+  }
+}
+
+export const fetchRoom = async (roomId: string) => {
+  const mutation = `
+    mutation findRoom($roomId: String!) {
+      room(id: $roomId) {
+          id
+          name
+          messages {
+            id
+            user_id
+            text
+            room_id
+            created_at
+            updated_at
+            user {
+              user_name
+            }
+          }
+      }
+    }
+  `
+  const requestOptions = {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer ' + localStorage.getItem('token')
     },
     body: JSON.stringify({ query: mutation, variables: { roomId } })
   }
@@ -67,7 +105,7 @@ export const fetchRoom = async (roomId: string) => {
   }
 }
 
-export const onCreateRoom: (roomName: string) => Promise<RoomModel> = async (roomName: string) => {
+export const onCreateRoom: (roomName: string) => Promise<RoomModel | number> = async (roomName: string) => {
   const mutation = `
       mutation createRoom($createRoomInput: CreateRoomInput!) {
         createRoom(createRoomInput: $createRoomInput) {
@@ -84,7 +122,8 @@ export const onCreateRoom: (roomName: string) => Promise<RoomModel> = async (roo
   const requestOptions = {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer ' + localStorage.getItem('token')
     },
     body: JSON.stringify({ query: mutation, variables })
   }
@@ -94,10 +133,7 @@ export const onCreateRoom: (roomName: string) => Promise<RoomModel> = async (roo
     const result = await response.json()
 
     if (result.errors) {
-      console.error(
-        'GraphQL errors:',
-        result.errors.map((error: any) => error.message)
-      )
+      return redirectWhenUnauthorizedUser(result.errors)
     } else if (result.data && result.data.createRoom) {
       return result.data.createRoom
     } else {
@@ -108,7 +144,7 @@ export const onCreateRoom: (roomName: string) => Promise<RoomModel> = async (roo
   }
 }
 
-export const onRemoveRoom: (roomId: string) => Promise<RoomModel> = async (roomId: string) => {
+export const onRemoveRoom: (roomId: string) => Promise<RoomModel | number> = async (roomId: string) => {
   const mutation = `
         mutation removeRoom($id: String!) {
           removeRoom(id: $id) {
@@ -122,7 +158,8 @@ export const onRemoveRoom: (roomId: string) => Promise<RoomModel> = async (roomI
   const requestOptions = {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer ' + localStorage.getItem('token')
     },
     body: JSON.stringify({ query: mutation, variables })
   }
@@ -130,10 +167,7 @@ export const onRemoveRoom: (roomId: string) => Promise<RoomModel> = async (roomI
     const response = await fetch(endpoint, requestOptions)
     const result = await response.json()
     if (result.errors) {
-      console.error(
-        'GraphQL errors:',
-        result.errors.map((error: any) => error.message)
-      )
+      return redirectWhenUnauthorizedUser(result.errors)
     } else if (result.data && result.data.removeMessage) {
       return result.data.removeMessage
     } else {
@@ -149,7 +183,7 @@ export const onCreateMessage = async (input: any) => {
             mutation createMessage($input: CreateMessageInput!) {
                 createMessage(input: $input) {
                     id
-                    user_name
+                    user_id
                     text
                     room_id
                     created_at
@@ -163,7 +197,8 @@ export const onCreateMessage = async (input: any) => {
   const requestOptions = {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer ' + localStorage.getItem('token')
     },
     body: JSON.stringify({ query: mutation, variables })
   }
@@ -171,10 +206,7 @@ export const onCreateMessage = async (input: any) => {
     const response = await fetch(endpoint, requestOptions)
     const result = await response.json()
     if (result.errors) {
-      console.error(
-        'GraphQL errors:',
-        result.errors.map((error: any) => error.message)
-      )
+      return redirectWhenUnauthorizedUser(result.errors)
     } else if (result.data && result.data.createMessage) {
       return result.data.createMessage
     } else {
@@ -199,7 +231,8 @@ export const onDeleteMessage = async (messageId: string) => {
   const requestOptions = {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer ' + localStorage.getItem('token')
     },
     body: JSON.stringify({ query: mutation, variables })
   }
@@ -207,10 +240,7 @@ export const onDeleteMessage = async (messageId: string) => {
     const response = await fetch(endpoint, requestOptions)
     const result = await response.json()
     if (result.errors) {
-      console.error(
-        'GraphQL errors:',
-        result.errors.map((error: any) => error.message)
-      )
+      return redirectWhenUnauthorizedUser(result.errors)
     } else if (result.data && result.data.deleteMessage) {
       return result.data.deleteMessage
     } else {
@@ -226,7 +256,7 @@ export const onEditMessage = async (messageId: string, input: any) => {
             mutation editMessage($id: String!, $input: CreateMessageInput!) {
                 editMessage(id: $id, input: $input) {
                     id
-                    user_name
+                    user_id
                     text
                     room_id
                     created_at
@@ -237,6 +267,42 @@ export const onEditMessage = async (messageId: string, input: any) => {
   const variables = {
     id: messageId,
     input: input
+  }
+  const requestOptions = {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer ' + localStorage.getItem('token')
+    },
+    body: JSON.stringify({ query: mutation, variables })
+  }
+  try {
+    const response = await fetch(endpoint, requestOptions)
+    const result = await response.json()
+    if (result.errors) {
+      return redirectWhenUnauthorizedUser(result.errors)
+    } else if (result.data && result.data.editMessage) {
+      return result.data.editMessage
+    } else {
+      console.error('Unexpected response:', result)
+    }
+  } catch (error) {
+    console.error('Error fetching room:', error)
+  }
+}
+
+export const onCreateUser = async (input: any) => {
+  const mutation = `
+            mutation createUser($createUserInput: CreateUserInput!) {
+                createUser(createUserInput: $createUserInput) {
+                    id
+                    user_name
+                    password
+                }
+            }
+        `
+  const variables = {
+    createUserInput: input
   }
   const requestOptions = {
     method: 'POST',
@@ -253,12 +319,82 @@ export const onEditMessage = async (messageId: string, input: any) => {
         'GraphQL errors:',
         result.errors.map((error: any) => error.message)
       )
-    } else if (result.data && result.data.editMessage) {
-      return result.data.editMessage
+    } else if (result.data && result.data.createUser) {
+      return result.data.createUser
     } else {
       console.error('Unexpected response:', result)
     }
   } catch (error) {
-    console.error('Error fetching room:', error)
+    console.error('Error fetching user:', error)
+  }
+}
+
+export const onCheckUserName = async (userName: string) => {
+  const mutation = `
+            mutation findUserByName($userName: String!) {
+              findUserByName(userName: $userName){
+                id
+                user_name
+              }
+            }
+        `
+  const variables = {
+    userName: userName
+  }
+  const requestOptions = {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ query: mutation, variables })
+  }
+  try {
+    const response = await fetch(endpoint, requestOptions)
+    const result = await response.json()
+    if (result.errors) {
+      return result.errors.map((error: any) => error.message)[0]
+    } else if (result.data.findUserByName) {
+      return result.data.findUserByName
+    } else {
+      console.error('Unexpected response:', result)
+    }
+  } catch (error) {
+    console.error('Error fetching user:', error)
+  }
+}
+
+export const loginUser = async (userName: string, password: string): Promise<string | undefined> => {
+  const mutation = `
+            mutation signIn($userName: String!, $password: String!) {
+                signIn(userName: $userName, password: $password) {
+                  access_token
+                }
+            }
+        `
+  const variables = {
+    userName: userName,
+    password: password
+  }
+  const requestOptions = {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ query: mutation, variables })
+  }
+  try {
+    const response = await fetch(endpoint, requestOptions)
+    const result = await response.json()
+    if (result.errors) {
+      return result.errors.map((error: any) => error.message)[0]
+    } else if (result.data.signIn) {
+      const { access_token } = result.data.signIn
+      localStorage.setItem('token', access_token)
+      window.location.href = '/'
+    } else {
+      console.error('Unexpected response:', result)
+    }
+  } catch (error) {
+    console.error('Error fetching user:', error)
   }
 }

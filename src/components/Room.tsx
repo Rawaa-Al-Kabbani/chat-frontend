@@ -8,13 +8,8 @@ import UserMessage from './UserMessage'
 const Room: FunctionComponent = () => {
   const { id } = useParams()
   const [room, setRoom] = useState<any>('')
-  const [userName, setUserName] = useState<string>('')
   const [message, setMessage] = useState<string>('')
   const socket = useContext(WebsocketContext)
-
-  const handleOnChangeUserName = (value: string) => {
-    setUserName(value)
-  }
 
   const handleOnChangeMessage = (value: string, input?: any) => {
     if (input) {
@@ -26,13 +21,15 @@ const Room: FunctionComponent = () => {
 
   const handleOnCreateMessage = async () => {
     const input = {
-      user_name: userName,
       text: message,
       room_id: id
     }
-    await onCreateMessage(input)
-    setUserName('')
-    setMessage('')
+    const newMessage = await onCreateMessage(input)
+    if (newMessage && newMessage === 401) {
+      window.location.href = 'http://localhost:5001/sign_in'
+    } else {
+      setMessage('')
+    }
   }
 
   const getRoom = async (id: string) => {
@@ -85,15 +82,6 @@ const Room: FunctionComponent = () => {
 
         <Columns key={room.messages.map((item: any) => item.id).join(',')}>
           <Rows style={{ flex: 1, justifyContent: 'flex-end' }}>
-            <div style={{ width: '100%', marginBottom: '15px' }}>
-              <Input
-                type='text'
-                placeholder='Enter user name'
-                defaultValue={userName}
-                onChange={(e) => handleOnChangeUserName(e.target.value)}
-              />
-            </div>
-
             <div style={{ width: '100%' }}>
               <Input
                 type='text'
