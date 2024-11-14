@@ -40,3 +40,11 @@ To run the formatting:
 
 1. Install the development dependencies using `yarn install`
 2. Run `yarn run format`
+
+## To generate the GraphQL types
+
+To generate the GraphQL types:
+
+1. Install the dependencies using `yarn install`
+2. Ensure the backend is running, and that you have the correct schema URL configured in `codegen.ts`
+3. Run `yarn run graphql-codegen`
